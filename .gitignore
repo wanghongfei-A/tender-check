@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+# 真实招标文件体积大，且含采购人信息，不进仓库
+data/raw/
+
+# 生成的报告不进仓库，截图放 docs/img/
+reports/
