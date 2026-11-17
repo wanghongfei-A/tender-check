@@ -14,3 +14,7 @@ reports/
 
 # 个人练手/临时脚本，不属于项目代码
 scratch/
+
+# IDE 本地配置（PyCharm / VS Code），每个人的都不一样
+.idea/
+.vscode/
