@@ -7,3 +7,7 @@ data/raw/
 
 # 生成的报告不进仓库，截图放 docs/img/
 reports/
+
+# Office 打开文件时生成的临时锁文件（~$开头）
+~$*
+*.~lock.*
