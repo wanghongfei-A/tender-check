@@ -57,24 +57,31 @@ def ratio(num, den):
 
 
 def evaluate(labels):
-    """返回 (逐类统计, 总耗时秒数)。"""
+    """返回 (逐类统计, 总耗时秒数, 参与评估的文件数)。
+
+    只统计「已标注」的文件：标注表里新增但还没填的文件不参与评估，
+    否则会出现「评估文件数 = 6，但实际判断只有 24 个」的错乱。
+    """
     per_class = {c: {"gt": 0, "pred": 0, "TP": 0, "FP": 0, "FN": 0, "TN": 0} for c in CODES}
     elapsed = 0.0
+    n_files = 0
     for fname, gt_map in labels.items():
+        valid = [c for c in CODES if gt_map.get(c) in (0, 1)]
+        if not valid:
+            continue
         path = os.path.join(RAW_DIR, fname)
         t0 = time.time()
         preds = predict(path)
         elapsed += time.time() - t0
-        for code in CODES:
-            gt = gt_map.get(code)
-            if gt is None:
-                continue
+        n_files += 1
+        for code in valid:
+            gt = gt_map[code]
             pt = preds.get(code, 0)
             st = per_class[code]
             st["gt"] += gt
             st["pred"] += pt
             st[classify(gt, pt)] += 1
-    return per_class, elapsed
+    return per_class, elapsed, n_files
 
 
 def build_report(per_class, elapsed, n_files):
@@ -134,8 +141,8 @@ def build_report(per_class, elapsed, n_files):
     macro_p = sum(precs) / len(precs) if precs else None
 
     rows = [
-        ("评估文件数", n_files),
-        ("判断总数（文件 × 12 类）", n_files * 12),
+        ("评估文件数（已标注）", n_files),
+        ("判断总数（实际参与）", tp + fp + fn + tn),
         ("TP / FP / FN / TN", f"{tp} / {fp} / {fn} / {tn}"),
         ("微平均准确率 TP/(TP+FP)", micro_p),
         ("宏平均准确率（各类平均）", macro_p),
@@ -166,8 +173,8 @@ def build_report(per_class, elapsed, n_files):
 
 if __name__ == "__main__":
     labels = load_labels()
-    per_class, elapsed = evaluate(labels)
-    summary = build_report(per_class, elapsed, len(labels))
+    per_class, elapsed, n_files = evaluate(labels)
+    summary = build_report(per_class, elapsed, n_files)
 
     print(f"{'代码':<5}{'类别':<18}{'标注':<5}{'工具':<5}{'TP':<4}{'FP':<4}{'FN':<4}{'准确率':<8}{'召回率'}")
     for code in CODES:

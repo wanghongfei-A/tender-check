@@ -8,41 +8,79 @@
 """
 
 import os
+import re
 import sys
 from datetime import datetime
 
 import pandas as pd
 from openpyxl import load_workbook
 
-from tendercheck.extract import extract
+from tendercheck.extract import detect_announcement, extract, find_deadline
 from tendercheck.grade import grade
 from tendercheck.parse import load_blocks
 
 
-def build_summary(graded, path, pages):
-    """概览：键值对。"""
+def build_summary(graded, path, pages, announcement=None, deadline=None):
+    """概览：键值对。
+
+    announcement：extract.detect_announcement() 的结果（判断公告章节是否为空）
+    deadline：extract.find_deadline() 的结果（在关键词附近找具体时间）
+    """
     counts = {"红": 0, "黄": 0, "绿": 0, "待补": 0}
     for g in graded:
         counts[g["level"]] += 1
 
-    def first_text(code):
+    def first_text(code, pattern=None, hint=""):
+        """取该类的代表性原文。
+
+        pattern 给了就优先找匹配它的命中（金额找"元"、时间找"年月日/时:分"），
+        一条都不匹配时返回首条并附上 hint，明确告诉读者"文件里没有具体值"。
+        """
         for g in graded:
-            if g["code"] == code and g["hits"]:
-                return g["hits"][0]["text"][:60]
+            if g["code"] != code or not g["hits"]:
+                continue
+            hits = g["hits"]
+            if pattern:
+                for h in hits:
+                    if re.search(pattern, h["text"]):
+                        return h["text"][:80]
+                return hint
+            return hits[0]["text"][:60]
         return "（未检出）"
+
+    # 公告章节状况
+    if announcement is None:
+        ann_desc = "未找到公告章节"
+    elif announcement["empty"]:
+        ann_desc = "p%d 内容为空（仅 %d 字）" % (announcement["page"], announcement["chars"])
+    else:
+        ann_desc = "p%d，正文 %d 字" % (announcement["page"], announcement["chars"])
 
     rows = [
         ("文件名", os.path.basename(path)),
         ("生成时间", datetime.now().strftime("%Y-%m-%d %H:%M")),
         ("总页数", pages),
+        ("公告章节", ann_desc),
         ("红（必须处理）", counts["红"]),
         ("黄（需确认）", counts["黄"]),
         ("绿（信息类）", counts["绿"]),
         ("待补（需人工确认）", counts["待补"]),
         ("项目名称", first_text("C01")),
-        ("预算/最高限价", first_text("C02")),
-        ("投标截止/开标", first_text("C04")),
+        ("预算/最高限价", first_text(
+            "C02", r"\d[\d,\.]*\s*(元|万元)", "（未给出具体金额，需人工确认）")),
+        ("投标截止/开标",
+         ("%s（p%d）" % (deadline["when"], deadline["page"])) if deadline
+         else "（文件未给出具体时刻，需到公告或平台确认）"),
     ]
+
+    # 公告章节为空时，明确提示"信息不在这份文件里"
+    if announcement and announcement["empty"]:
+        rows.insert(4, (
+            "⚠️ 重要提示",
+            "本文件未收录招标公告，截止时间/获取方式等需到交易平台确认（原文：%s）"
+            % announcement["sample"].strip(),
+        ))
+
     return pd.DataFrame(rows, columns=["项", "内容"])
 
 
@@ -129,8 +167,10 @@ if __name__ == "__main__":
     blocks = load_blocks(path)
     graded = grade(extract(blocks))
     pages = max(b["page"] for b in blocks)
+    announcement = detect_announcement(blocks)
+    deadline = find_deadline(blocks)
 
-    df_sum = build_summary(graded, path, pages)
+    df_sum = build_summary(graded, path, pages, announcement, deadline)
     df_risk = build_risk_rows(graded)
     df_all = build_all_sheet(graded)
     df_rev = build_review_rows(graded)
