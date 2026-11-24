@@ -5,11 +5,11 @@
 ![recall](https://img.shields.io/badge/recall-100%25-brightgreen)
 ![precision](https://img.shields.io/badge/precision-92.5%25-green)
 
-输入一份 60–120 页的招标文件（PDF / DOCX），3 秒输出一份 Excel 风险自查报告：
+输入一份 60–120 页的招标文件（PDF / DOCX 均可），3 秒输出一份 Excel 风险自查报告：
 **12 类关键条款 + 红/黄/绿分级 + 原文页码 + 复核建议**。
 
 > 状态：**v1.0.0 功能闭环**（2026-11）｜解析 → 抽取 → 分级 → 报告 → 评估 五段全通，指标达标。
-> 已知未做：语料 6/20 份、DOCX 解析、演示视频。
+> 已知未做：语料 11/20 份、演示视频。
 
 ## 解决什么问题
 
@@ -106,8 +106,8 @@ python -m tendercheck.evaluate
 | `grade.py` 红黄绿分级（基础等级 × 置信度 × 文本信号） | ✅ |
 | `report.py` Excel 报告（4 个 sheet） | ✅ |
 | `evaluate.py` 量化评估（TP/FP/FN 对账） | ✅ |
-| 语料补至 20 份并重测指标（当前 6 份 / 5 行业）| 🚧 |
-| DOCX 解析 | ⬜ |
+| 语料补至 20 份并重测指标（当前 11 份 / 5 行业）| 🚧 |
+| DOCX 解析（按文档顺序遍历段落/表格，页码由目录页校准）| ✅ |
 
 ## 指标实测
 
