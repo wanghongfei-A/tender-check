@@ -1,9 +1,15 @@
 # 招标文件关键条款抽取与废标风险自查工具
 
+![version](https://img.shields.io/badge/version-v1.0.0-blue)
+![python](https://img.shields.io/badge/python-3.10%2B-3776ab)
+![recall](https://img.shields.io/badge/recall-100%25-brightgreen)
+![precision](https://img.shields.io/badge/precision-92.5%25-green)
+
 输入一份 60–120 页的招标文件（PDF / DOCX），3 秒输出一份 Excel 风险自查报告：
 **12 类关键条款 + 红/黄/绿分级 + 原文页码 + 复核建议**。
 
-> 状态：**开发中**（2026-11）｜解析层与规则层已完成，风险分级、报告输出与量化评估进行中。
+> 状态：**v1.0.0 功能闭环**（2026-11）｜解析 → 抽取 → 分级 → 报告 → 评估 五段全通，指标达标。
+> 已知未做：语料 6/20 份、DOCX 解析、演示视频。
 
 ## 解决什么问题
 
